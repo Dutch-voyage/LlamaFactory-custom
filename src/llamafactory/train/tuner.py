@@ -114,6 +114,7 @@ def _training_function(config: dict[str, Any]) -> None:
 
 def run_exp(args: Optional[dict[str, Any]] = None, callbacks: Optional[list["TrainerCallback"]] = None) -> None:
     args = read_args(args)
+    print(args)
     if "-h" in args or "--help" in args:
         get_train_args(args)
 

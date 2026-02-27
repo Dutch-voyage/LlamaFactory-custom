@@ -185,6 +185,7 @@ def _check_extra_dependencies(
     if training_args is not None:
         if training_args.deepspeed:
             check_version("deepspeed", mandatory=True)
+            check_version("deepspeed>=0.10.0,<=0.18.4")
 
         if training_args.predict_with_generate:
             check_version("jieba", mandatory=True)

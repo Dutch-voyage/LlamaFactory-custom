@@ -92,6 +92,7 @@ class DatasetAttr:
 
 def get_dataset_list(dataset_names: list[str] | None, dataset_dir: str | dict) -> list["DatasetAttr"]:
     r"""Get the attributes of the datasets."""
+
     if dataset_names is None:
         dataset_names = []
 
