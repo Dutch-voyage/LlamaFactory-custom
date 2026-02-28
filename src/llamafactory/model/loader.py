@@ -176,15 +176,18 @@ def load_model(
             else:
                 load_class = AutoModelForCausalLM
 
+            # Apply four-layer hack (modifies config in-place)
+            apply_four_layer_hack(load_class, model_args, init_kwargs, config)
+            print('-' * 100)
+            print(config)
+            print("-" * 100)
             if model_args.train_from_scratch:
                 model = load_class.from_config(config, trust_remote_code=model_args.trust_remote_code)
             else:
-                # Try to apply four-layer hack, fallback to normal loading
-                hack_applied = apply_four_layer_hack(load_class, model_args, init_kwargs, config)
-                if not hack_applied:
-                    model = load_class.from_pretrained(**init_kwargs)
-                    if getattr(model.config, "model_type", None) in ["qwen2_5_omni", "qwen3_omni_moe"]:
-                        model = getattr(model, "thinker")
+                # Load model with (possibly modified) config
+                model = load_class.from_pretrained(**init_kwargs)
+                if getattr(model.config, "model_type", None) in ["qwen2_5_omni", "qwen3_omni_moe"]:
+                    model = getattr(model, "thinker")
 
         if model_args.mixture_of_depths == "convert":
             model = convert_pretrained_model_to_mod(model, config, model_args)

@@ -4,24 +4,27 @@
 # This is useful for testing with large models when memory is limited
 
 from typing import Any, Dict
+from transformers import PretrainedConfig
+from transformers.models.qwen3_5_moe.configuration_qwen3_5_moe import Qwen3_5MoeTextConfig
 
-from ..extras import logging
+
+from ...extras import logging
 
 
 logger = logging.get_logger(__name__)
 
-
+# NOTE supporting Qwen3.5 only, with config.text_config and config.vision_config
 def apply_four_layer_hack(
     load_class,
     model_args: Any,
     init_kwargs: Dict[str, Any],
-    config: Any,
+    config: PretrainedConfig,
 ) -> bool:
     """
     Apply a temporary hack to load only the last 4 layers of a model.
 
-    This function modifies the config to reduce the number of layers to 4,
-    then loads only the last 4 layers' weights from the checkpoint.
+    This function modifies the config to reduce the number of layers to 4.
+    The model will be loaded with only 4 layers initialized.
 
     Args:
         load_class: The AutoModel class to use for loading
@@ -32,64 +35,34 @@ def apply_four_layer_hack(
     Returns:
         bool: True if the hack was applied, False otherwise
     """
-    original_num_layers = getattr(config, "num_hidden_layers", getattr(config, "num_layers", None))
-
+    original_num_layers = getattr(config.text_config, "num_hidden_layers", getattr(config.text_config, "num_layers", None))
+    
     if not original_num_layers or original_num_layers <= 4:
         return False
 
-    logger.warning_rank0(f"HACK: Reducing model from {original_num_layers} layers to 4 layers (last 4)")
-
-    # Store original layer count for loading weights
-    init_kwargs["_original_num_layers"] = original_num_layers
+    logger.warning_rank0(f"HACK: Reducing model from {original_num_layers} layers to 4 layers")
 
     # Modify config to only have 4 layers
     setattr(config, "num_hidden_layers", 4)
     if hasattr(config, "num_layers"):
         setattr(config, "num_layers", 4)
 
-    # Load model with reduced config
-    model = load_class.from_pretrained(**init_kwargs)
+    # Also handle layer_types if present (Qwen3.5-MoE uses this to determine attention type per layer)
+    # If we don't truncate this, Qwen3_5MoeDynamicCache will have mismatched lengths
+    if hasattr(config, "layer_types") and isinstance(config.layer_types, list):
+        if len(config.layer_types) > 4:
+            setattr(config, "layer_types", config.layer_types[-4:])
+            logger.warning_rank0(f"HACK: Truncated layer_types from {original_num_layers} to 4 (last 4)")
 
-    # Handle special model types
-    if getattr(model.config, "model_type", None) in ["qwen2_5_omni", "qwen3_omni_moe"]:
-        model = getattr(model, "thinker")
+    # Handle nested text_config (used in multimodal models like Qwen3.5-MoE)
+    if hasattr(config, "text_config") and config.text_config:
+        text_config = config.text_config
+        if hasattr(text_config, "num_hidden_layers"):
+            text_config.num_hidden_layers = 4
+        if hasattr(text_config, "layer_types") and isinstance(text_config.layer_types, list):
+            if len(text_config.layer_types) > 4:
+                text_config.layer_types = text_config.layer_types[-4:]
+                logger.warning_rank0(f"HACK: Truncated text_config.layer_types from {original_num_layers} to 4 (last 4)")
 
-    # Now manually load only the last 4 layers from checkpoint
-    checkpoint_path = model_args.model_name_or_path
-
-    # Load the full model checkpoint to get state dict
-    full_model_kwargs = {k: v for k, v in init_kwargs.items()
-                        if k not in ["_original_num_layers", "config", "pretrained_model_name_or_path"]}
-    full_model = load_class.from_pretrained(
-        pretrained_model_name_or_path=checkpoint_path,
-        config=config,
-        **full_model_kwargs
-    )
-    state_dict = full_model.state_dict()
-
-    # Filter to only load last 4 layers
-    filtered_state_dict = {}
-    for key, value in state_dict.items():
-        # Check if this key contains layer references
-        if ".layers." in key or ".layer." in key:
-            # Extract layer number and only keep last 4 layers
-            parts = key.split(".")
-            for part in parts:
-                if part.isdigit():
-                    layer_num = int(part)
-                    if layer_num >= original_num_layers - 4:
-                        # Remap to 0-3 range
-                        new_layer_num = layer_num - (original_num_layers - 4)
-                        new_parts = [str(new_layer_num) if p.isdigit() else p for p in parts]
-                        new_key = ".".join(new_parts)
-                        filtered_state_dict[new_key] = value
-                    break
-        else:
-            # Keep all non-layer parameters (embeddings, layernorm, etc.)
-            filtered_state_dict[key] = value
-
-    # Load the filtered state dict
-    missing_keys, unexpected_keys = model.load_state_dict(filtered_state_dict, strict=False)
-    logger.info_rank0(f"HACK: Loaded last 4 layers. Missing keys: {len(missing_keys)}, Unexpected: {len(unexpected_keys)}")
-
+    # The model will be loaded with the modified config
     return True

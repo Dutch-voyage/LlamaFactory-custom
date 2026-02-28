@@ -8,7 +8,8 @@ export MASTER_PORT=23556
 
 ds_config_path=./examples/deepspeed/ds_z3_config.json
 
-model_name_or_path=/home/yyx/models/Qwen3-30B-A3B
+# model_name_or_path=/home/yyx/models/Qwen3-30B-A3B
+model_name_or_path=/home/yyx/models/Qwen3.5-35B-A3B
 
 finetuning_type=full
 
