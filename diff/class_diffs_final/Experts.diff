@@ -1,0 +1,10 @@
+diff --git a/temp_Qwen3NextExperts.py b/temp_Qwen3_5MoeExperts.py
+index 64cbe394..f17fff9a 100644
+--- a/temp_Qwen3NextExperts.py
++++ b/temp_Qwen3_5MoeExperts.py
+@@ -1,4 +1,4 @@
+-class Qwen3NextExperts(nn.Module):
++class Qwen3_5MoeExperts(nn.Module):
+     """Collection of expert weights stored as 3D tensors."""
+ 
+     def __init__(self, config):

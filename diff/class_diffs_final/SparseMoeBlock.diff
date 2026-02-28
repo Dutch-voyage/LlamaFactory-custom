@@ -1,0 +1,18 @@
+diff --git a/temp_Qwen3NextSparseMoeBlock.py b/temp_Qwen3_5MoeSparseMoeBlock.py
+index e959d598..580f14fe 100644
+--- a/temp_Qwen3NextSparseMoeBlock.py
++++ b/temp_Qwen3_5MoeSparseMoeBlock.py
+@@ -1,9 +1,9 @@
+-class Qwen3NextSparseMoeBlock(nn.Module):
++class Qwen3_5MoeSparseMoeBlock(nn.Module):
+     def __init__(self, config):
+         super().__init__()
+-        self.gate = Qwen3NextTopKRouter(config)
+-        self.experts = Qwen3NextExperts(config)
+-        self.shared_expert = Qwen3NextMLP(config, intermediate_size=config.shared_expert_intermediate_size)
++        self.gate = Qwen3_5MoeTopKRouter(config)
++        self.experts = Qwen3_5MoeExperts(config)
++        self.shared_expert = Qwen3_5MoeMLP(config, intermediate_size=config.shared_expert_intermediate_size)
+         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
+ 
+     def forward(self, hidden_states: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:

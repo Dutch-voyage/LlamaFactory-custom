@@ -1,0 +1,296 @@
+{
+  "source_files": {
+    "file1": "modeling_qwen3_5_moe.py",
+    "file2": "modeling_qwen3_next.py"
+  },
+  "class_mappings": [
+    {
+      "category": "Core Architecture",
+      "description": "Shared fundamental components between both implementations",
+      "mappings": [
+        {
+          "component": "DynamicCache",
+          "file1_class": "Qwen3_5MoeDynamicCache",
+          "file1_line": 175,
+          "file2_class": "Qwen3NextDynamicCache",
+          "file2_line": 85,
+          "similarity": "High",
+          "notes": "Identical cache implementation for KV caching during inference",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeDynamicCache.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextDynamicCache.py"
+        },
+        {
+          "component": "RMSNormGated",
+          "file1_class": "Qwen3_5MoeRMSNormGated",
+          "file1_line": 265,
+          "file2_class": "Qwen3NextRMSNormGated",
+          "file2_line": 67,
+          "similarity": "High",
+          "notes": "Gated RMS normalization layer",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeRMSNormGated.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextRMSNormGated.py"
+        },
+        {
+          "component": "RMSNorm",
+          "file1_class": "Qwen3_5MoeRMSNorm",
+          "file1_line": 891,
+          "file2_class": "Qwen3NextRMSNorm",
+          "file2_line": 242,
+          "similarity": "High",
+          "notes": "Standard RMS normalization layer",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeRMSNorm.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextRMSNorm.py"
+        },
+        {
+          "component": "GatedDeltaNet",
+          "file1_class": "Qwen3_5MoeGatedDeltaNet",
+          "file1_line": 446,
+          "file2_class": "Qwen3NextGatedDeltaNet",
+          "file2_line": 589,
+          "similarity": "High",
+          "notes": "Gated DeltaNet neural network component",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeGatedDeltaNet.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextGatedDeltaNet.py"
+        },
+        {
+          "component": "Attention",
+          "file1_class": "Qwen3_5MoeAttention",
+          "file1_line": 714,
+          "file2_class": "Qwen3NextAttention",
+          "file2_line": 346,
+          "similarity": "High",
+          "notes": "Multi-head attention mechanism",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeAttention.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextAttention.py"
+        },
+        {
+          "component": "MLP",
+          "file1_class": "Qwen3_5MoeMLP",
+          "file1_line": 794,
+          "file2_class": "Qwen3NextMLP",
+          "file2_line": 803,
+          "similarity": "High",
+          "notes": "Feed-forward network layer",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeMLP.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextMLP.py"
+        },
+        {
+          "component": "Experts",
+          "file1_class": "Qwen3_5MoeExperts",
+          "file1_line": 811,
+          "file2_class": "Qwen3NextExperts",
+          "file2_line": 820,
+          "similarity": "High",
+          "notes": "Mixture of Experts implementation",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeExperts.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextExperts.py"
+        },
+        {
+          "component": "TopKRouter",
+          "file1_class": "Qwen3_5MoeTopKRouter",
+          "file1_line": 850,
+          "file2_class": "Qwen3NextTopKRouter",
+          "file2_line": 859,
+          "similarity": "High",
+          "notes": "Top-K routing mechanism for MoE",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeTopKRouter.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextTopKRouter.py"
+        },
+        {
+          "component": "SparseMoeBlock",
+          "file1_class": "Qwen3_5MoeSparseMoeBlock",
+          "file1_line": 869,
+          "file2_class": "Qwen3NextSparseMoeBlock",
+          "file2_line": 880,
+          "similarity": "High",
+          "notes": "Sparse MoE block combining router and experts",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeSparseMoeBlock.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextSparseMoeBlock.py"
+        },
+        {
+          "component": "DecoderLayer",
+          "file1_class": "Qwen3_5MoeDecoderLayer",
+          "file1_line": 911,
+          "file2_class": "Qwen3NextDecoderLayer",
+          "file2_line": 902,
+          "similarity": "High",
+          "notes": "Transformer decoder layer",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeDecoderLayer.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextDecoderLayer.py"
+        },
+        {
+          "component": "PreTrainedModel",
+          "file1_class": "Qwen3_5MoePreTrainedModel",
+          "file1_line": 972,
+          "file2_class": "Qwen3NextPreTrainedModel",
+          "file2_line": 972,
+          "similarity": "High",
+          "notes": "Base pretrained model class",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoePreTrainedModel.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextPreTrainedModel.py"
+        },
+        {
+          "component": "Model",
+          "file1_class": "Qwen3_5MoeModel",
+          "file1_line": 1527,
+          "file2_class": "Qwen3NextModel",
+          "file2_line": 1004,
+          "similarity": "High",
+          "notes": "Base model implementation",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeModel.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextModel.py"
+        },
+        {
+          "component": "ForCausalLM",
+          "file1_class": "Qwen3_5MoeForCausalLM",
+          "file1_line": 1918,
+          "file2_class": "Qwen3NextForCausalLM",
+          "file2_line": 1178,
+          "similarity": "High",
+          "notes": "Causal language model head",
+          "file1_extract": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeForCausalLM.py",
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextForCausalLM.py"
+        }
+      ]
+    },
+    {
+      "category": "Rotary Position Embeddings",
+      "description": "Position encoding implementations",
+      "mappings": [
+        {
+          "component": "RotaryEmbedding",
+          "file1_classes": [
+            "Qwen3_5MoeVisionRotaryEmbedding",
+            "Qwen3_5MoeTextRotaryEmbedding"
+          ],
+          "file1_lines": [
+            69,
+            85
+          ],
+          "file2_class": "Qwen3NextRotaryEmbedding",
+          "file2_line": 175,
+          "similarity": "Medium",
+          "notes": "MoE version separates vision and text embeddings, Next version combines them",
+          "file1_extracts": [
+            "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionRotaryEmbedding.py",
+            "class_extracts_final/qwen3_5_moe/Qwen3_5MoeTextRotaryEmbedding.py"
+          ],
+          "file2_extract": "class_extracts_final/qwen3_next/Qwen3NextRotaryEmbedding.py"
+        }
+      ]
+    },
+    {
+      "category": "Unique to modeling_qwen3_5_moe.py",
+      "description": "Classes only present in the MoE + Vision variant",
+      "classes": [
+        {
+          "class_name": "Qwen3_5MoeVisionMLP",
+          "line": 1007,
+          "purpose": "Vision-specific MLP layer",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionMLP.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeVisionPatchEmbed",
+          "line": 1020,
+          "purpose": "Vision patch embedding layer",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionPatchEmbed.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeVisionPatchMerger",
+          "line": 1040,
+          "purpose": "Vision patch merging layer",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionPatchMerger.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeVisionAttention",
+          "line": 1070,
+          "purpose": "Vision-specific attention mechanism",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionAttention.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeVisionBlock",
+          "line": 1153,
+          "purpose": "Vision transformer block",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionBlock.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeVisionModel",
+          "line": 1180,
+          "purpose": "Complete vision model implementation",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeVisionModel.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeModelOutputWithPast",
+          "line": 1375,
+          "purpose": "Model output class with past key values",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeModelOutputWithPast.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeCausalLMOutputWithPast",
+          "line": 1400,
+          "purpose": "Causal LM output class with past key values",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeCausalLMOutputWithPast.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeTextModel",
+          "line": 1425,
+          "purpose": "Text-only model variant",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeTextModel.py"
+        },
+        {
+          "class_name": "Qwen3_5MoeForConditionalGeneration",
+          "line": 2024,
+          "purpose": "Conditional generation model variant",
+          "extract_file": "class_extracts_final/qwen3_5_moe/Qwen3_5MoeForConditionalGeneration.py"
+        }
+      ]
+    },
+    {
+      "category": "Unique to modeling_qwen3_next.py",
+      "description": "Classes only present in the Next variant (task-specific heads)",
+      "classes": [
+        {
+          "class_name": "Qwen3NextForSequenceClassification",
+          "line": 1282,
+          "purpose": "Sequence classification task head",
+          "extract_file": "class_extracts_final/qwen3_next/Qwen3NextForSequenceClassification.py"
+        },
+        {
+          "class_name": "Qwen3NextForTokenClassification",
+          "line": 1286,
+          "purpose": "Token classification task head",
+          "extract_file": "class_extracts_final/qwen3_next/Qwen3NextForTokenClassification.py"
+        },
+        {
+          "class_name": "Qwen3NextForQuestionAnswering",
+          "line": 1290,
+          "purpose": "Question answering task head",
+          "extract_file": "class_extracts_final/qwen3_next/Qwen3NextForQuestionAnswering.py"
+        }
+      ]
+    }
+  ],
+  "statistics": {
+    "file1_lines": 2424,
+    "file2_lines": 1301,
+    "file1_classes": 25,
+    "file2_classes": 16,
+    "shared_classes": 13,
+    "unique_to_file1": 10,
+    "unique_to_file2": 3
+  },
+  "summary": {
+    "architectural_difference": "The qwen3_5_moe version focuses on multi-modal capabilities (vision + text) with MoE architecture, while qwen3_next version focuses on task-specific heads for NLP tasks.",
+    "key_similarity": "Both share the same core transformer architecture with MoE components, indicating they are based on the same foundational model design.",
+    "implementation_difference": "The main architectural difference is that qwen3_5_moe separates vision and text processing, while qwen3_next combines them and adds task-specific classification heads."
+  },
+  "extraction_info": {
+    "extract_dir": "class_extracts_final",
+    "qwen3_5_moe_dir": "class_extracts_final/qwen3_5_moe",
+    "qwen3_next_dir": "class_extracts_final/qwen3_next",
+    "total_extracted_files": 42,
+    "extraction_notes": "Each class has been extracted to its own Python file for easy comparison",
+    "qwen3_5_moe_files": 25,
+    "qwen3_next_files": 17
+  }
+}

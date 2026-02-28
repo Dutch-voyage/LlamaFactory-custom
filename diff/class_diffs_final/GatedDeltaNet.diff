@@ -1,0 +1,218 @@
+diff --git a/temp_Qwen3NextGatedDeltaNet.py b/temp_Qwen3_5MoeGatedDeltaNet.py
+index 38cb3014..ed80b392 100644
+--- a/temp_Qwen3NextGatedDeltaNet.py
++++ b/temp_Qwen3_5MoeGatedDeltaNet.py
+@@ -1,5 +1,5 @@
+-class Qwen3NextGatedDeltaNet(nn.Module):
+-    def __init__(self, config: Qwen3NextConfig, layer_idx: int):
++class Qwen3_5MoeGatedDeltaNet(nn.Module):
++    def __init__(self, config: Qwen3_5MoeConfig, layer_idx: int):
+         super().__init__()
+         self.hidden_size = config.hidden_size
+         self.num_v_heads = config.linear_num_value_heads
+@@ -26,12 +26,6 @@ class Qwen3NextGatedDeltaNet(nn.Module):
+             padding=self.conv_kernel_size - 1,
+         )
+ 
+-        # projection of the input hidden states
+-        projection_size_qkvz = self.key_dim * 2 + self.value_dim * 2
+-        projection_size_ba = self.num_v_heads * 2
+-        self.in_proj_qkvz = nn.Linear(self.hidden_size, projection_size_qkvz, bias=False)
+-        self.in_proj_ba = nn.Linear(self.hidden_size, projection_size_ba, bias=False)
+-
+         # time step projection (discretization)
+         # instantiate once and copy inv_dt in init_weights of PretrainedModel
+         self.dt_bias = nn.Parameter(torch.ones(self.num_v_heads))
+@@ -40,7 +34,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
+         self.A_log = nn.Parameter(torch.log(A))
+ 
+         self.norm = (
+-            Qwen3NextRMSNormGated(self.head_v_dim, eps=self.layer_norm_epsilon)
++            Qwen3_5MoeRMSNormGated(self.head_v_dim, eps=self.layer_norm_epsilon)
+             if FusedRMSNormGated is None
+             else FusedRMSNormGated(
+                 self.head_v_dim,
+@@ -65,39 +59,15 @@ class Qwen3NextGatedDeltaNet(nn.Module):
+                 " https://github.com/Dao-AILab/causal-conv1d"
+             )
+ 
+-    def fix_query_key_value_ordering(self, mixed_qkvz, mixed_ba):
+-        """
+-        Derives `query`, `key` and `value` tensors from `mixed_qkvz` and `mixed_ba`.
+-        """
+-
+-        new_tensor_shape_qkvz = mixed_qkvz.size()[:-1] + (
+-            self.num_k_heads,
+-            2 * self.head_k_dim + 2 * self.head_v_dim * self.num_v_heads // self.num_k_heads,
+-        )
+-        new_tensor_shape_ba = mixed_ba.size()[:-1] + (self.num_k_heads, 2 * self.num_v_heads // self.num_k_heads)
+-
+-        mixed_qkvz = mixed_qkvz.view(*new_tensor_shape_qkvz)
+-        mixed_ba = mixed_ba.view(*new_tensor_shape_ba)
+-        split_arg_list_qkvz = [
+-            self.head_k_dim,
+-            self.head_k_dim,
+-            (self.num_v_heads // self.num_k_heads * self.head_v_dim),
+-            (self.num_v_heads // self.num_k_heads * self.head_v_dim),
+-        ]
+-        split_arg_list_ba = [self.num_v_heads // self.num_k_heads, self.num_v_heads // self.num_k_heads]
+-        query, key, value, z = torch.split(mixed_qkvz, split_arg_list_qkvz, dim=3)
+-        b, a = torch.split(mixed_ba, split_arg_list_ba, dim=3)
+-        # [b, sq, ng, np/ng * hn] -> [b, sq, np, hn]
+-        value = value.reshape(value.size(0), value.size(1), -1, self.head_v_dim)
+-        z = z.reshape(z.size(0), z.size(1), -1, self.head_v_dim)
+-        b = b.reshape(b.size(0), b.size(1), self.num_v_heads)
+-        a = a.reshape(a.size(0), a.size(1), self.num_v_heads)
+-        return query, key, value, z, b, a
++        self.in_proj_qkv = nn.Linear(self.hidden_size, self.key_dim * 2 + self.value_dim, bias=False)
++        self.in_proj_z = nn.Linear(self.hidden_size, self.value_dim, bias=False)
++        self.in_proj_b = nn.Linear(self.hidden_size, self.num_v_heads, bias=False)
++        self.in_proj_a = nn.Linear(self.hidden_size, self.num_v_heads, bias=False)
+ 
+     def forward(
+         self,
+         hidden_states: torch.Tensor,
+-        cache_params: Qwen3NextDynamicCache | None = None,
++        cache_params: Qwen3_5MoeDynamicCache | None = None,
+         cache_position: torch.LongTensor | None = None,
+         attention_mask: torch.Tensor | None = None,
+     ):
+@@ -118,14 +88,15 @@ class Qwen3NextGatedDeltaNet(nn.Module):
+             conv_state = cache_params.conv_states[self.layer_idx]
+             recurrent_state = cache_params.recurrent_states[self.layer_idx]
+ 
+-        projected_states_qkvz = self.in_proj_qkvz(hidden_states)
+-        projected_states_ba = self.in_proj_ba(hidden_states)
+-        query, key, value, z, b, a = self.fix_query_key_value_ordering(projected_states_qkvz, projected_states_ba)
+-        query, key, value = (x.reshape(x.shape[0], x.shape[1], -1) for x in (query, key, value))
+-
+-        mixed_qkv = torch.cat((query, key, value), dim=-1)
++        mixed_qkv = self.in_proj_qkv(hidden_states)
+         mixed_qkv = mixed_qkv.transpose(1, 2)
+ 
++        z = self.in_proj_z(hidden_states)
++        z = z.reshape(batch_size, seq_len, -1, self.head_v_dim)
++
++        b = self.in_proj_b(hidden_states)
++        a = self.in_proj_a(hidden_states)
++
+         if use_precomputed_states:
+             # 2. Convolution sequence transformation
+             # NOTE: the conv state is updated in `causal_conv1d_update`
+@@ -161,9 +132,10 @@ class Qwen3NextGatedDeltaNet(nn.Module):
+             ],
+             dim=-1,
+         )
+-        query = query.reshape(query.shape[0], query.shape[1], -1, self.head_k_dim)
+-        key = key.reshape(key.shape[0], key.shape[1], -1, self.head_k_dim)
+-        value = value.reshape(value.shape[0], value.shape[1], -1, self.head_v_dim)
++
++        query = query.reshape(batch_size, seq_len, -1, self.head_k_dim)
++        key = key.reshape(batch_size, seq_len, -1, self.head_k_dim)
++        value = value.reshape(batch_size, seq_len, -1, self.head_v_dim)
+ 
+         beta = b.sigmoid()
+         # If the model is loaded in fp16, without the .float() here, A might be -inf
+@@ -200,15 +172,97 @@ class Qwen3NextGatedDeltaNet(nn.Module):
+         if cache_params is not None:
+             cache_params.recurrent_states[self.layer_idx] = last_recurrent_state
+ 
+-        z_shape_og = z.shape
+         # reshape input data into 2D tensor
+-        core_attn_out = core_attn_out.reshape(-1, core_attn_out.shape[-1])
+-        z = z.reshape(-1, z.shape[-1])
++        core_attn_out = core_attn_out.reshape(-1, self.head_v_dim)
++        z = z.reshape(-1, self.head_v_dim)
+         core_attn_out = self.norm(core_attn_out, z)
+-        core_attn_out = core_attn_out.reshape(z_shape_og)
+-        core_attn_out = core_attn_out.reshape(core_attn_out.shape[0], core_attn_out.shape[1], -1)
++        core_attn_out = core_attn_out.reshape(batch_size, seq_len, -1)
+ 
+         output = self.out_proj(core_attn_out)
+         return output
+ 
+ 
++def rotate_half(x):
++    """Rotates half the hidden dims of the input."""
++    x1 = x[..., : x.shape[-1] // 2]
++    x2 = x[..., x.shape[-1] // 2 :]
++    return torch.cat((-x2, x1), dim=-1)
++
++
++# Adapted from transformers.models.glm.modular_glm.apply_rotary_pos_emb
++def apply_rotary_pos_emb(q, k, cos, sin, unsqueeze_dim=1):
++    """Applies Rotary Position Embedding to the query and key tensors.
++
++    Removes the interleaving of cos and sin from GLM
++
++    Args:
++        q (`torch.Tensor`): The query tensor.
++        k (`torch.Tensor`): The key tensor.
++        cos (`torch.Tensor`): The cosine part of the rotary embedding.
++        sin (`torch.Tensor`): The sine part of the rotary embedding.
++        unsqueeze_dim (`int`, *optional*, defaults to 1):
++            The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
++            sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example, note
++            that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then, if q and
++            k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
++            cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k have
++            the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
++    Returns:
++        `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
++    """
++    cos = cos.unsqueeze(unsqueeze_dim)
++    sin = sin.unsqueeze(unsqueeze_dim)
++
++    # Keep half or full tensor for later concatenation
++    rotary_dim = cos.shape[-1]
++    q_rot, q_pass = q[..., :rotary_dim], q[..., rotary_dim:]
++    k_rot, k_pass = k[..., :rotary_dim], k[..., rotary_dim:]
++
++    # Apply rotary embeddings on the first half or full tensor
++    q_embed = (q_rot * cos) + (rotate_half(q_rot) * sin)
++    k_embed = (k_rot * cos) + (rotate_half(k_rot) * sin)
++
++    # Concatenate back to full shape
++    q_embed = torch.cat([q_embed, q_pass], dim=-1)
++    k_embed = torch.cat([k_embed, k_pass], dim=-1)
++    return q_embed, k_embed
++
++
++def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
++    """
++    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
++    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
++    """
++    batch, num_key_value_heads, slen, head_dim = hidden_states.shape
++    if n_rep == 1:
++        return hidden_states
++    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
++    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
++
++
++def eager_attention_forward(
++    module: nn.Module,
++    query: torch.Tensor,
++    key: torch.Tensor,
++    value: torch.Tensor,
++    attention_mask: torch.Tensor | None,
++    scaling: float,
++    dropout: float = 0.0,
++    **kwargs: Unpack[TransformersKwargs],
++):
++    key_states = repeat_kv(key, module.num_key_value_groups)
++    value_states = repeat_kv(value, module.num_key_value_groups)
++
++    attn_weights = torch.matmul(query, key_states.transpose(2, 3)) * scaling
++    if attention_mask is not None:
++        attn_weights = attn_weights + attention_mask
++
++    attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query.dtype)
++    attn_weights = nn.functional.dropout(attn_weights, p=dropout, training=module.training)
++    attn_output = torch.matmul(attn_weights, value_states)
++    attn_output = attn_output.transpose(1, 2).contiguous()
++
++    return attn_output, attn_weights
++
++
++@use_kernelized_func(apply_rotary_pos_emb)

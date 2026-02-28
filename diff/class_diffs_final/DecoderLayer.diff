@@ -1,0 +1,36 @@
+diff --git a/temp_Qwen3NextDecoderLayer.py b/temp_Qwen3_5MoeDecoderLayer.py
+index c796df71..a5acea67 100644
+--- a/temp_Qwen3NextDecoderLayer.py
++++ b/temp_Qwen3_5MoeDecoderLayer.py
+@@ -1,24 +1,15 @@
+-class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
+-    def __init__(self, config: Qwen3NextConfig, layer_idx: int):
++class Qwen3_5MoeDecoderLayer(GradientCheckpointingLayer):
++    def __init__(self, config: Qwen3_5MoeTextConfig, layer_idx: int):
+         super().__init__()
+         self.hidden_size = config.hidden_size
+-
+-        # token mixer
+         self.layer_type = config.layer_types[layer_idx]
+         if self.layer_type == "linear_attention":
+-            self.linear_attn = Qwen3NextGatedDeltaNet(config, layer_idx)
++            self.linear_attn = Qwen3_5MoeGatedDeltaNet(config, layer_idx)
+         elif self.layer_type == "full_attention":
+-            self.self_attn = Qwen3NextAttention(config, layer_idx)
+-
+-        if (layer_idx not in config.mlp_only_layers) and (
+-            config.num_experts > 0 and (layer_idx + 1) % config.decoder_sparse_step == 0
+-        ):
+-            self.mlp = Qwen3NextSparseMoeBlock(config)
+-        else:
+-            self.mlp = Qwen3NextMLP(config, intermediate_size=config.intermediate_size)
+-
+-        self.input_layernorm = Qwen3NextRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+-        self.post_attention_layernorm = Qwen3NextRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
++            self.self_attn = Qwen3_5MoeAttention(config, layer_idx)
++        self.mlp = Qwen3_5MoeSparseMoeBlock(config)
++        self.input_layernorm = Qwen3_5MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
++        self.post_attention_layernorm = Qwen3_5MoeRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+ 
+     def forward(
+         self,
